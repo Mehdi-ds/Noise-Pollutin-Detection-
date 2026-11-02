@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Noise Readings Mumbai</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one long reading column; sections of locations, timings, then figures. Bars are plain HTML scaled from zero. */
+:root{
+  --bg:#edf0f2; --surface:#f8fafb; --fg:#14212b; --muted:#56656f; --line:#cfd8de;
+  --accent:#0b6e8a; --alert:#b5390b;
+  --z-ind:#6b7f3a; --z-com:#0b6e8a; --z-res:#8a4d9e; --z-sil:#c07a12;
+  --night:#26394a; --day:#e3b23c;
+  --f-display:"Familjen Grotesk","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1920; --surface:#15242d; --fg:#e6edf1; --muted:#93a3ad; --line:#2a3d48;
+  --accent:#4fb6d3; --alert:#f08a5d;
+  --z-ind:#a2b868; --z-com:#4fb6d3; --z-res:#c493d6; --z-sil:#e0a340;
+  --night:#5d7a93; --day:#e3b23c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1920; --surface:#15242d; --fg:#e6edf1; --muted:#93a3ad; --line:#2a3d48;
+  --accent:#4fb6d3; --alert:#f08a5d;
+  --z-ind:#a2b868; --z-com:#4fb6d3; --z-res:#c493d6; --z-sil:#e0a340;
+  --night:#5d7a93; --day:#e3b23c; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.55;
+  padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:860px;margin:0 auto;padding-block:32px 56px;display:flex;flex-direction:column;gap:44px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(2.1rem,7vw,3.4rem);font-weight:700;letter-spacing:-.02em}
+h2{font-size:1.55rem;font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.05rem;font-weight:500}
+p{margin:0;max-width:65ch}
+.label{font-family:var(--f-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+header{display:flex;flex-direction:column;gap:14px}
+.lede{font-size:1.1rem;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.facts div{background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.facts b{font-family:var(--f-display);font-size:1.5rem;font-weight:700}
+section{display:flex;flex-direction:column;gap:16px}
+.note{font-size:.88rem;color:var(--muted);border-left:3px solid var(--line);padding-left:12px}
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:500 .85rem var(--f-body);color:var(--fg);background:var(--surface);border:1px solid var(--line);padding:7px 13px;cursor:pointer;border-radius:2px;display:inline-flex;align-items:center;gap:7px}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chip:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dot{width:9px;height:9px;display:inline-block;border-radius:50%}
+/* bars */
+.bars{display:flex;flex-direction:column;gap:9px}
+.row{display:grid;grid-template-columns:minmax(0,10.5rem) minmax(0,1fr) 3.4rem;gap:10px;align-items:center}
+.row .nm{font-size:.88rem;line-height:1.25;min-width:0;overflow-wrap:anywhere}
+.row .nm small{display:block;color:var(--muted);font-size:.74rem}
+.track{background:var(--line);height:14px;position:relative;min-width:0}
+.fill{height:100%;position:absolute;left:0;top:0}
+.row .v{text-align:right;font-size:.85rem}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;display:inline-block}
+@media (max-width:480px){.row{grid-template-columns:minmax(0,1fr) 3.2rem}.row .track{grid-column:1/-1;order:3}.row .v{grid-row:1;grid-column:2}}
+/* timings */
+.clock{display:flex;height:44px;border:1px solid var(--line)}
+.clock div{display:flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:.78rem;min-width:0;white-space:nowrap;overflow:hidden}
+.c-n{background:var(--night);color:#fff}
+.c-d{background:var(--day);color:#1a1a1a}
+.ticks{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:.72rem;color:var(--muted);margin-top:-8px}
+.dates{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.scroll{overflow-x:auto;border:1px solid var(--line);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:520px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--f-mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500}
+td.n,th.n{text-align:right}
+tr:last-child td{border-bottom:0}
+.over{color:var(--alert);font-weight:600}
+select{font:500 .95rem var(--f-body);background:var(--surface);color:var(--fg);border:1px solid var(--line);padding:8px 10px;border-radius:2px;min-width:0}
+.lookup{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.lookup label{display:flex;flex-direction:column;gap:4px}
+.limitout{font-family:var(--f-display);font-size:2.2rem;font-weight:700}
+footer{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:6px}
+@media (prefers-reduced-motion:no-preference){.fill{transition:width .35s ease}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="label">MPCB ambient noise monitoring · December 2023</span>
+  <h1>Noise Readings Mumbai</h1>
+  <p class="lede">Where noise was monitored in Mumbai, Navi Mumbai and Thane, when the readings were taken, and how they compare with the legal limit for each zone.</p>
+  <div class="facts">
+    <div><b>92</b><span class="label">records</span></div>
+    <div><b>23</b><span class="label">locations</span></div>
+    <div><b>72.3</b><span class="label">mean dB(A)</span></div>
+    <div><b>82 / 92</b><span class="label">above limit</span></div>
+  </div>
+  <p class="note">All numbers come from the student CEP report built on the Maharashtra Pollution Control Board report. They describe these records only, not Mumbai or Maharashtra as a whole.</p>
+</header>
+
+<section id="timings">
+  <span class="label">Timings</span>
+  <h2>When the readings were taken</h2>
+  <p>Each location was monitored for 24 hours on two days. The day and night Leq values were worked out from the hourly readings, so each location has four records.</p>
+  <div>
+    <div class="clock" role="img" aria-label="24 hour clock: night 00:00 to 06:00, day 06:00 to 22:00, night 22:00 to 24:00">
+      <div class="c-n" style="flex:6">Night</div><div class="c-d" style="flex:16">Day · 06:00 to 22:00</div><div class="c-n" style="flex:2"></div>
+    </div>
+    <div class="ticks" style="margin-top:6px"><span>00</span><span>06</span><span>12</span><span>18</span><span>22</span><span>24</span></div>
+  </div>
+  <div class="dates">
+    <div class="card"><span class="label">Sunday</span><h3>17 December 2023</h3><span class="mono" style="color:var(--muted)">Non-working day</span></div>
+    <div class="card"><span class="label">Monday</span><h3>18 December 2023</h3><span class="mono" style="color:var(--muted)">Working day</span></div>
+  </div>
+  <h3>Limit for each zone, dB(A)</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Zone</th><th class="n">Day limit</th><th class="n">Night limit</th></tr></thead>
+    <tbody>
+      <tr><td><span class="dot" style="background:var(--z-ind)"></span> Industrial</td><td class="n mono">75</td><td class="n mono">70</td></tr>
+      <tr><td><span class="dot" style="background:var(--z-com)"></span> Commercial</td><td class="n mono">65</td><td class="n mono">55</td></tr>
+      <tr><td><span class="dot" style="background:var(--z-res)"></span> Residential</td><td class="n mono">55</td><td class="n mono">45</td></tr>
+      <tr><td><span class="dot" style="background:var(--z-sil)"></span> Silence</td><td class="n mono">50</td><td class="n mono">40</td></tr>
+    </tbody>
+  </table></div>
+  <div class="lookup">
+    <label><span class="label">Zone</span>
+      <select id="lz"><option>Industrial</option><option>Commercial</option><option selected>Residential</option><option>Silence</option></select></label>
+    <label><span class="label">Period</span>
+      <select id="lp"><option>Day</option><option selected>Night</option></select></label>
+    <div><span class="label">Limit</span><div class="limitout"><span id="lout">45</span> <span style="font-size:1rem;font-weight:500;color:var(--muted)">dB(A)</span></div></div>
+  </div>
+</section>
+
+<section id="locations">
+  <span class="label">Locations</span>
+  <h2>Where the readings are highest</h2>
+  <p>The fifteen locations with the highest mean Leq across their four records. Filter by zone.</p>
+  <div class="chips" id="zchips" role="group" aria-label="Filter by zone"></div>
+  <div class="bars" id="locbars"></div>
+  <div class="legend" id="zleg"></div>
+  <p class="note">The report lists these fifteen of the 23 locations. Mumbai has 15 locations in the dataset, Navi Mumbai 3 and Thane 5. Zone labels for Mumbai were taken from chart groupings in the source and need confirming against official records.</p>
+</section>
+
+<section id="city">
+  <span class="label">Figures</span>
+  <h2>City, zone and day versus night</h2>
+  <h3>Mean Leq by city, dB(A)</h3>
+  <div class="bars" id="citybars"></div>
+  <div class="legend"><span><i style="background:var(--day)"></i>Day</span><span><i style="background:var(--night)"></i>Night</span></div>
+  <h3>Mean Leq by zone, dB(A)</h3>
+  <div class="bars" id="zonebars"></div>
+  <p class="note">Industrial is the only zone with records inside the limit: 2 of 6 day records and none of 6 night records are above it.</p>
+  <h3>Records above their limit, by city and period</h3>
+  <div class="bars" id="overbars"></div>
+  <p class="note">Bars start at zero. The share above the limit is 100% in Navi Mumbai, 80% in Thane and 93.3% by day and 86.7% by night in Mumbai.</p>
+</section>
+
+<section id="top">
+  <span class="label">Highest single readings</span>
+  <h2>Twelve loudest records</h2>
+  <div class="scroll"><table id="toptable">
+    <thead><tr><th class="n">#</th><th>Location</th><th>Date</th><th>Period</th><th>Zone</th><th class="n">Leq</th><th class="n">Limit</th><th class="n">Over by</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <p class="note">The highest is 87.0 dB(A) at Mumbadevi Temple on 18 December, 37.0 above the silence-zone day limit of 50.</p>
+</section>
+
+<footer>
+  <span>Source: Maharashtra Pollution Control Board, Report on Ambient Noise Monitoring in Metro Cities of Maharashtra, 2023.</span>
+  <span>Screening view for a college project. Not an official compliance finding and not a prediction. Two days cannot show yearly trends.</span>
+</footer>
+</div>
+
+<script>
+var ZC={Industrial:'var(--z-ind)',Commercial:'var(--z-com)',Residential:'var(--z-res)',Silence:'var(--z-sil)'};
+var LOC=[
+['Mumbai','Hindu Colony, Dadar','Residential',80.9,83.3],
+['Thane','Main Road, Gaondevi Mandir','Commercial',77.5,81.5],
+['Mumbai','Backside of High Court','Silence',76.5,81.1],
+['Mumbai','Vashi Naka, Chembur','Commercial',76.2,82.2],
+['Mumbai','Malabar Hills','Residential',75.5,77.4],
+['Thane','Pokharan','Residential',75.3,82.0],
+['Mumbai','Santacruz Airport','Commercial',74.5,77.7],
+['Mumbai','Shivaji Park, Dadar','Residential',74.0,78.0],
+['Mumbai','Mumbadevi Temple','Silence',74.0,87.0],
+['Mumbai','Matunga','Residential',73.7,79.8],
+['Mumbai','Ghatkopar (W)','Commercial',73.2,78.2],
+['Mumbai','Sion','Commercial',73.2,79.0],
+['Mumbai','Kamathipura','Residential',73.1,79.5],
+['Mumbai','Charkop, Kandivali','Industrial',72.5,80.6],
+['Mumbai','Borivali National Park','Silence',72.3,76.7]];
+var TOP=[
+[1,'Mumbadevi Temple','18 Dec','Day','Silence',87.0,50],
+[2,'Hindu Colony, Dadar','17 Dec','Day','Residential',83.3,55],
+[3,'Hindu Colony, Dadar','17 Dec','Night','Residential',82.9,45],
+[4,'Hindu Colony, Dadar','18 Dec','Day','Residential',82.5,55],
+[5,'Vashi Naka, Chembur','18 Dec','Day','Commercial',82.2,65],
+[6,'Vashi Naka, Chembur','17 Dec','Day','Commercial',82.0,65],
+[7,'Pokharan, Thane','17 Dec','Day','Residential',82.0,55],
+[8,'Main Road, Gaondevi Mandir, Thane','17 Dec','Night','Commercial',81.5,55],
+[9,'Backside of High Court','17 Dec','Day','Silence',81.1,50],
+[10,'Charkop, Kandivali','18 Dec','Day','Industrial',80.6,75],
+[11,'Matunga','18 Dec','Day','Residential',79.8,55],
+[12,'Main Road, Gaondevi Mandir, Thane','17 Dec','Day','Commercial',79.7,65]];
+function el(t,c,h){var e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e}
+function bar(box,name,sub,val,max,color,fmt){
+  var r=el('div','row');
+  r.appendChild(el('div','nm',name+(sub?'<small>'+sub+'</small>':'')));
+  var t=el('div','track'),f=el('div','fill');f.style.width=(val/max*100)+'%';f.style.background=color;t.appendChild(f);r.appendChild(t);
+  r.appendChild(el('div','v mono',fmt||val.toFixed(1)));box.appendChild(r)}
+var sel='All';
+function drawLoc(){
+  var b=document.getElementById('locbars');b.innerHTML='';
+  LOC.filter(function(l){return sel==='All'||l[2]===sel}).forEach(function(l){
+    bar(b,l[1],l[0]+' · '+l[2]+' · max '+l[4].toFixed(1),l[3],90,ZC[l[2]])})}
+function drawChips(){
+  var c=document.getElementById('zchips');c.innerHTML='';
+  ['All','Industrial','Commercial','Residential','Silence'].forEach(function(z){
+    var b=el('button','chip',(z==='All'?'':'<i class="dot" style="background:'+ZC[z]+'"></i>')+z);
+    b.type='button';b.setAttribute('aria-pressed',z===sel);
+    b.onclick=function(){sel=z;drawChips();drawLoc()};c.appendChild(b)})}
+drawChips();drawLoc();
+document.getElementById('zleg').innerHTML=Object.keys(ZC).map(function(z){return '<span><i style="background:'+ZC[z]+'"></i>'+z+'</span>'}).join('');
+// city
+var cb=document.getElementById('citybars');
+[['Mumbai',77.7,70.2],['Navi Mumbai',68.2,66.4],['Thane',72.8,68.0]].forEach(function(c){
+  bar(cb,c[0]+' · day','',c[1],90,'var(--day)');bar(cb,c[0]+' · night','',c[2],90,'var(--night)')});
+var zb=document.getElementById('zonebars');
+[['Commercial',74.7,70.0],['Industrial',72.5,62.5],['Residential',77.7,72.1],['Silence',75.2,67.7]].forEach(function(z){
+  bar(zb,z[0]+' · day','',z[1],90,'var(--day)');bar(zb,z[0]+' · night','',z[2],90,'var(--night)')});
+var ob=document.getElementById('overbars');
+[['Mumbai · day','28 of 30',93.3],['Mumbai · night','26 of 30',86.7],['Navi Mumbai · day','6 of 6',100],['Navi Mumbai · night','6 of 6',100],['Thane · day','8 of 10',80],['Thane · night','8 of 10',80]].forEach(function(o){
+  bar(ob,o[0],o[1],o[2],100,'var(--alert)',o[2].toFixed(1)+'%')});
+// top table
+var tb=document.querySelector('#toptable tbody');
+TOP.forEach(function(r){var d=(r[5]-r[6]).toFixed(1);
+  tb.innerHTML+='<tr><td class="n mono">'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td><td>'+r[4]+'</td><td class="n mono">'+r[5].toFixed(1)+'</td><td class="n mono">'+r[6]+'</td><td class="n mono over">+'+d+'</td></tr>'});
+// limit lookup
+var L={Industrial:[75,70],Commercial:[65,55],Residential:[55,45],Silence:[50,40]};
+function lim(){var z=document.getElementById('lz').value,p=document.getElementById('lp').value;document.getElementById('lout').textContent=L[z][p==='Day'?0:1]}
+document.getElementById('lz').onchange=lim;document.getElementById('lp').onchange=lim;lim();
+</script>
+</body>
+</html>
